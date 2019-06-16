@@ -1,13 +1,14 @@
 package common
 
 import (
-	"image/color"
 	"image"
-	"github.com/svetlins/srt/ui"
+	"image/color"
 	"math"
 	"runtime"
-	_ "time"
 	"sync"
+	_ "time"
+
+	"github.com/svetlins/srt/ui"
 )
 
 var ReflectionLimit int
@@ -16,18 +17,19 @@ var numWorkers int
 
 func init() {
 	ReflectionLimit = 5
-	numChunks       = 20
-	numWorkers      = runtime.NumCPU() / 1
+	numChunks = 20
+	numWorkers = runtime.NumCPU()
 }
 
 type Camera struct {
 	hSize, vSize          int
 	fov                   float64
 	transform             Matrix
-	inverseTransform             Matrix
+	inverseTransform      Matrix
 	halfWidth, halfHeight float64
 	world                 *World
 	currentPosition       Vector
+	pixelSizeF            float64
 }
 
 func NewCamera(hSize, vSize int, fov float64) *Camera {
@@ -45,13 +47,14 @@ func NewCamera(hSize, vSize int, fov float64) *Camera {
 	}
 
 	return &Camera{
-		hSize:      hSize,
-		vSize:      vSize,
-		fov:        fov,
-		transform:  NewIdentity4(),
-		halfWidth:  halfWidth,
-		halfHeight: halfHeight,
-		currentPosition: NewPoint(0, 1.5, -5),
+		hSize:           hSize,
+		vSize:           vSize,
+		fov:             fov,
+		transform:       NewIdentity4(),
+		halfWidth:       halfWidth,
+		halfHeight:      halfHeight,
+		currentPosition: NewPoint(-0.5, 1, -4),
+		pixelSizeF:      (halfWidth * 2) / float64(hSize),
 	}
 }
 
@@ -65,10 +68,8 @@ func (c *Camera) pixelSize() float64 {
 }
 
 func (c *Camera) RayFor(px, py int) Ray {
-	pixelSize := c.pixelSize()
-
-	xOffset := (float64(px) + 0.5) * pixelSize
-	yOffset := (float64(py) + 0.5) * pixelSize
+	xOffset := (float64(px) + 0.5) * c.pixelSizeF
+	yOffset := (float64(py) + 0.5) * c.pixelSizeF
 
 	canvasX := c.halfWidth - xOffset
 	canvasY := c.halfHeight - yOffset
@@ -93,17 +94,17 @@ func (c *Camera) Render(w *World) *Canvas {
 
 	var wg sync.WaitGroup
 	cores := 100
- 	xc := float64(c.hSize) / math.Sqrt(float64(cores))
- 	yc := float64(c.vSize) / math.Sqrt(float64(cores))
+	xc := float64(c.hSize) / math.Sqrt(float64(cores))
+	yc := float64(c.vSize) / math.Sqrt(float64(cores))
 
 	for xi := 0; xi < int(math.Sqrt(float64(cores))); xi++ {
 		for yi := 0; yi < int(math.Sqrt(float64(cores))); yi++ {
 			wg.Add(1)
-			go func (xi, yi int) {
+			go func(xi, yi int) {
 				for y := 0; y < int(yc); y++ {
 					for x := 0; x < int(xc); x++ {
-						xx := x + xi * int(xc)
-						yy := y + yi * int(yc)
+						xx := x + xi*int(xc)
+						yy := y + yi*int(yc)
 
 						canvas.SetPixel(xx, yy,
 							w.ColorAt(
@@ -120,33 +121,6 @@ func (c *Camera) Render(w *World) *Canvas {
 
 	wg.Wait()
 
-	// for ci := 0; ci < cores; ci++ {
-	// 	for y := 0; y < int(yc); y++ {
-	// 		for x := 0; x < int(xc); x++ {
-	// 			xx := int(math.Min(float64(x + ci * int(xc)), float64(c.hSize - 1)))
-	// 			yy := int(math.Min(float64(y + ci * int(yc)), float64(c.vSize - 1)))
-
-	// 			canvas.SetPixel(xx, yy,
-	// 				w.ColorAt(
-	// 					c.RayFor(xx, yy),
-	// 					ReflectionLimit,
-	// 				),
-	// 			)
-	// 		}
-	// 	}
-
-	// }
-	// for y := 0; y < c.vSize; y++ {
-	// 	for x := 0; x < c.hSize; x++ {
-	// 		canvas.SetPixel(x, y,
-	// 			w.ColorAt(
-	// 				c.RayFor(x, y),
-	// 				ReflectionLimit,
-	// 			),
-	// 		)
-	// 	}
-	// }
-
 	return canvas
 }
 
@@ -159,11 +133,11 @@ func (c *Camera) DebugPixel(w *World, x, y int) {
 	)
 }
 
-func (c *Camera)SetWorld(w *World) {
+func (c *Camera) SetWorld(w *World) {
 	c.world = w
 }
 
-func (c *Camera)RenderToSequential(im *image.RGBA) {
+func (c *Camera) RenderToSequential(im *image.RGBA) {
 	for y := 0; y < c.vSize; y++ {
 		for x := 0; x < c.hSize; x++ {
 
@@ -183,20 +157,20 @@ func (c *Camera)RenderToSequential(im *image.RGBA) {
 	}
 }
 
-func (c *Camera)RenderTo(im *image.RGBA) {
+func (c *Camera) RenderTo(im *image.RGBA) {
 	cores := 100
- 	xc := math.Ceil(float64(c.hSize) / math.Sqrt(float64(cores)))
- 	yc := math.Ceil(float64(c.vSize) / math.Sqrt(float64(cores)))
+	xc := math.Ceil(float64(c.hSize) / math.Sqrt(float64(cores)))
+	yc := math.Ceil(float64(c.vSize) / math.Sqrt(float64(cores)))
 
 	var wg sync.WaitGroup
 	for xi := 0; xi < int(math.Ceil(math.Sqrt(float64(cores)))); xi++ {
 		for yi := 0; yi < int(math.Ceil(math.Sqrt(float64(cores)))); yi++ {
 			wg.Add(1)
-			go func (xi, yi int) {
+			go func(xi, yi int) {
 				for y := 0; y < int(yc); y++ {
 					for x := 0; x < int(xc); x++ {
-						xx := int(math.Min(float64(x + xi * int(xc)), float64(c.hSize)))
-						yy := int(math.Min(float64(y + yi * int(yc)), float64(c.vSize)))
+						xx := int(math.Min(float64(x+xi*int(xc)), float64(c.hSize)))
+						yy := int(math.Min(float64(y+yi*int(yc)), float64(c.vSize)))
 
 						rayColor := c.world.ColorAt(
 							c.RayFor(xx, yy),
@@ -221,11 +195,10 @@ func (c *Camera)RenderTo(im *image.RGBA) {
 
 	// var wg1 sync.WaitGroup
 
- 	// xc := math.Ceil(float64(c.hSize) / math.Sqrt(float64(numChunks)))
- 	// yc := math.Ceil(float64(c.vSize) / math.Sqrt(float64(numChunks)))
+	// xc := math.Ceil(float64(c.hSize) / math.Sqrt(float64(numChunks)))
+	// yc := math.Ceil(float64(c.vSize) / math.Sqrt(float64(numChunks)))
 
 	// ch := make(chan Work, 2 * numChunks)
-
 
 	// cc := 0
 	// for xi := 0; xi < int(math.Ceil(math.Sqrt(float64(numChunks)))); xi++ {
@@ -274,7 +247,7 @@ func (c *Camera)RenderTo(im *image.RGBA) {
 	// wg1.Wait()
 }
 
-func (c *Camera)Input(keys [4]bool) {
+func (c *Camera) Input(keys [4]bool) {
 	if keys[ui.Up] {
 		c.currentPosition.y += 0.15
 	}
@@ -294,7 +267,7 @@ func (c *Camera)Input(keys [4]bool) {
 	c.SetTransform(
 		ViewTransform(
 			c.currentPosition,
-			NewPoint(0, 1, 0),
+			NewPoint(-0.5, 1, 0.5),
 			New3Vector(0, 1, 0),
 		),
 	)

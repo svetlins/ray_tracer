@@ -1,11 +1,12 @@
 package ui
 
 import (
-	"log"
 	"image"
-	"github.com/go-gl/gl/v2.1/gl"
-	"github.com/go-gl/glfw/v3.1/glfw"
+	"log"
 	_ "time"
+
+	"github.com/go-gl/gl/v2.1/gl"
+	"github.com/go-gl/glfw/v3.3/glfw"
 )
 
 const (
@@ -21,21 +22,20 @@ type Renderer interface {
 }
 
 type UI struct {
-	window *glfw.Window
+	window   *glfw.Window
 	renderer Renderer
-	image *image.RGBA
+	image    *image.RGBA
 }
 
 const (
-	width = 250
-	height = 156
+	width  = 240
+	height = 150
 )
 
 func StartUI(renderer Renderer) {
 	ui := &UI{
 		renderer: renderer,
-		image: image.NewRGBA(image.Rect(0, 0, width, height)),
-
+		image:    image.NewRGBA(image.Rect(0, 0, width, height)),
 	}
 
 	if err := glfw.Init(); err != nil {
@@ -45,7 +45,7 @@ func StartUI(renderer Renderer) {
 	glfw.WindowHint(glfw.ContextVersionMajor, 2)
 	glfw.WindowHint(glfw.ContextVersionMinor, 1)
 
-	window, err := glfw.CreateWindow(1024, 640, "Ray Tracer", nil, nil)
+	window, err := glfw.CreateWindow(640, 400, "Ray Tracer", nil, nil)
 
 	if err != nil {
 		log.Fatalln(err)
@@ -66,7 +66,7 @@ func StartUI(renderer Renderer) {
 	ui.StartRunLoop()
 }
 
-func (ui *UI) Shutdown () {
+func (ui *UI) Shutdown() {
 	glfw.Terminate()
 }
 
@@ -82,8 +82,7 @@ func (ui *UI) StartRunLoop() {
 	}
 }
 
-
-func (ui *UI)setTexture(im *image.RGBA) {
+func (ui *UI) setTexture(im *image.RGBA) {
 	size := im.Rect.Size()
 
 	gl.TexImage2D(
@@ -97,8 +96,6 @@ func createTexture() uint32 {
 	gl.BindTexture(gl.TEXTURE_2D, texture)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
-	// gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
-	// gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
 	gl.BindTexture(gl.TEXTURE_2D, 0)
@@ -128,7 +125,7 @@ func readKeys(window *glfw.Window) [4]bool {
 
 	keys[Up] = window.GetKey(glfw.KeyUp) == glfw.Press
 	keys[Down] = window.GetKey(glfw.KeyDown) == glfw.Press
-	keys[Left] =  window.GetKey(glfw.KeyLeft) == glfw.Press
+	keys[Left] = window.GetKey(glfw.KeyLeft) == glfw.Press
 	keys[Right] = window.GetKey(glfw.KeyRight) == glfw.Press
 
 	return keys

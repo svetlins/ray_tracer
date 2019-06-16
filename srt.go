@@ -2,39 +2,24 @@ package main
 
 import (
 	"fmt"
-	"github.com/svetlins/srt/common"
-	"github.com/svetlins/srt/ui"
 	"math"
 	"runtime"
+
+	"github.com/svetlins/srt/common"
+	"github.com/svetlins/srt/ui"
 )
 
 func init() {
 	runtime.LockOSThread()
 }
 
-func main1() {
-	canvas := common.NewCanvas(300, 50)
-	color := common.NewColor(1, 0, 0)
-
-	for i := 0; i < 300; i++ {
-		canvas.SetPixel(
-			i,
-			int(math.Sin(float64(i)/300.0*(2*3.14))*25)+25,
-			color,
-		)
-	}
-
-	fmt.Println(canvas.PPM())
-}
-
 func main() {
-	// renderComplexWorld()
 	renderInUi()
 }
 
 func renderDefaultWorld() {
 	world := common.NewDefaultWorld()
-	camera := common.NewCamera(320, 200, math.Pi/2)
+	camera := common.NewCamera(640, 400, math.Pi/2)
 
 	camera.SetTransform(
 		common.ViewTransform(
@@ -80,13 +65,13 @@ func renderInUi() {
 	floor := common.NewPlane()
 	wall := common.NewPlane()
 	wall.SetTransform(
-		common.Translation(0, 0, 12).Multiply(common.RotationY(1).Multiply(common.RotationX(math.Pi/2))),
+		common.Translation(0, 0, 12).Multiply(common.RotationY(1).Multiply(common.RotationX(math.Pi / 2))),
 	)
 
 	stripe := common.NewPattern(
 		common.PatternColors(common.Red, common.Yellow),
 		common.PatternTransform(
-			common.Scaling(1,1,0.5),
+			common.Scaling(1, 1, 0.5),
 			common.RotationY(1),
 			common.Translation(1, 0.01, 3),
 		),
@@ -116,20 +101,18 @@ func renderInUi() {
 
 	middleSphere.SetMaterial(sphereMat)
 
+	world.AddObject(rightSphere)
 	world.AddObject(middleSphere)
 	world.AddObject(leftSphere)
 	world.AddObject(floor)
 	world.AddObject(wall)
 
-	// camera := common.NewCamera(120, 75, math.Pi/3)
-	camera := common.NewCamera(250, 156, math.Pi/3)
-	// camera := common.NewCamera(120, 75, math.Pi/3)
-	// common.EnableSimpleMode()
+	camera := common.NewCamera(240, 150, math.Pi/3)
 
 	camera.SetTransform(
 		common.ViewTransform(
-			common.NewPoint(0, 1.5, -5),
-			common.NewPoint(0, 1, 0),
+			common.NewPoint(-0.5, 1, -4),
+			common.NewPoint(-0.5, 1, 0.5),
 			common.New3Vector(0, 1, 0),
 		),
 	)
